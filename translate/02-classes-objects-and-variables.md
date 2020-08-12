@@ -237,6 +237,55 @@ aSong.duration                  » 252
 
 这种方式很特别。在 Betrand Meyer 的里程碑书籍《Object-Oriented Software Construction》中，他称这种方式为 *Uniform Access Principle*。通过隐藏不同实例变量和计算值之间的不同，你将你在类中实现的部分对外部世界屏蔽。你可以自由修改你功能的动作方式，而不必担忧外部使用你类的大量代码。这是一个巨大的好处。
 
+## 类变量和类方法
+
+到目前为止，我们已经创建了包含实例变量和实例方法的对象，实例变量被分配给特定的类实例，而实例方法运用这些变量进行运转。有时，类需要有自己的状态。这也是类变量存在的原因。
+
+### 类变量
+
+一个类变量可以在所有类的对象间共享，同时也可以被类方法访问。不过类变量只是一个类指定类变量的拷贝。类变量以两个
+`@@` 符号开头，比如
+`@@count`。和全局变量以及实例变量不同，类变量必须在被使用之前初始化。通过都是在类定义的体内进行初始化。
+
+例如，我们的点唱机可能想要记录每首歌被播放了多少次。次数记录可能是使用一个
+`Song`
+对象的实例变量。当一首歌被播放，实例中的值就增加。但是我们也想要了解总共有多少首歌被播放。我们可以通过搜寻
+`Song`
+对象并累加他们的播放次数达到目的，或者我们可以不考虑好的设计，直接使用全局变量完成。但是我们也是可以使用类变量。
+
+```ruby
+class Song
+  @@plays = 0
+  def initialize(name, artist, duration)
+    @name     = name
+    @artist   = artist
+    @duration = duration
+    @plays    = 0
+  end
+  def play
+    @plays += 1
+    @@plays += 1
+    "This  song: #@plays plays. Total #@@plays plays."
+  end
+end
+```
+
+为了能够断点，我们让 `Song#play`
+方法返回了一个包含次数的字符串，这其中也有所有歌曲播放的总次数。这样我们就可以容易进行测试。
+
+```ruby
+s1 = Song.new("Song1", "Artist1", 234)  # test songs..
+s2 = Song.new("Song2", "Artist2", 345)
+s1.play     »"This  song: 1 plays. Total 1 plays."
+s2.play     »"This  song: 1 plays. Total 2 plays."
+s1.playlay  »"This  song: 2 plays. Total 3 plays."
+s1.play     »"This  song: 3        plays. Total 4 plays."
+```
+
+类变量被提供给了一个类和它的实例。如果你需要让它能够被外部访问，你需要写一个访问方法。这些方法也可以是一个实例方法，也可以整洁一些制作为一个类方法。
+
+### 类方法
+
 ****
 
 > 本文翻译自《Programming Ruby》，主要目的是自己学习使用，文中翻译不到位之处烦请指正，如需转载请注明出处
