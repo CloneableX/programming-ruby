@@ -286,6 +286,106 @@ s1.play     »"This  song: 3        plays. Total 4 plays."
 
 ### 类方法
 
+有时候，一个类需要提供一些用于指定对象的方法。
+
+我们已经使用过这样的方法。`new` 方法创建了一个新 `Song`
+对象，但并不是它自身分配了一个指定的歌曲。
+
+```ruby
+aSong = Song.new(....)
+```
+
+你会发现类方法散布在 Ruby 的库中。例如，类 `File`
+的对象通过由文件系统支持的方式打开文件。然而，`File`
+类也提供了几个类方法，用于操作因无法打开的而没有生成 `File`
+对象的文件。如果你想要删除一个文件，你调用类方法 `File.delete`
+并且传参文件名就可以完成。
+
+```ruby
+File.delete("doomedFile")
+```
+
+类方法的定义与实例方法是有区别的。类方法是通过类名替代定义，并且有一个点符号在方法名之前。
+
+```ruby
+class Example
+
+  def instMeth              # instance method
+  end
+
+  def Example.classMeth     # class method
+  end
+
+end
+```
+
+点唱机需要为每首歌的播放进行收费，而不是通过时长。这样的方式就使短歌比长的歌更加盈利。我们可能想要阻止
+`SongList` 中太长的歌曲可以播放。我们可以在 `SongList`
+定义一个类方法，用来检查一首歌是否已经超过了长度限制。我们会通过一个类常量设置长度限制，就如同一般的常量（常量以大写字符开头）一样在类体中定义。
+
+```ruby
+class SongList
+  MaxTime = 5*60           #  5 minutes
+  def SongList.isTooLong(aSong)
+    return aSong.duration > MaxTime
+  end
+end
+song1 = Song.new("Bicylops", "Fleck", 260)
+SongList.isTooLong(song1)                        »false
+song2 = Song.new("The Calling", "Santana", 468)
+SongongList.isTooLong(song2)                     »true
+```
+
+### 单例和其他构造器
+
+有时你想要重写 Ruby
+中默认创建对象的方式。就如同这个例子，让我们继续看看点唱机。因为我们将会有许多点唱机，遍布于世界各地，我们需要便捷的方式维护它们。有部分需求是记录发生在每个点唱机中的事情，包括播放的歌曲，收取的钱，奇怪的液体沷向它等等。因为我们需要为音乐预留网络带宽，我们将在本地存储日志文件。这意味着我们需要一个类来归置日志。然而，我们只是想要每个点唱机都有一个日志对象，我们需要这些对象能在其它对象需要时被分享。
+
+根据需要我们可以使用设计模式中的单例模式。我们只通过一种方式创建一个日志对象，就是通过调用
+`Logger.create`，并且我们需要保证只有一个日志对象被创建。
+
+通过将 `Logger` 的 `new`
+方法私有化，我们阻止任何人通过一般的构造方法创建日志对象。取而代之的是，我们提供一个类方法，`Logger.create`。并且使用类变量
+`@@logger`
+保持日志单一实例的引用，当每次被调用时返回实例。（我们此处实现的单例模式不是线程安全的，如果多线程运行时可能创建多个日志实例。我们可以将它改造为线程安全的，然而，我们需要使用
+Ruby 中的 `Singleton` mixin，这个内容在 468
+页进行介绍）。我们可以通过查看方法返回的通过唯一码进行检查。
+
+```ruby
+Logger.create.object_id  » 47128750937760
+Logger.create.object_id  » 47128750937760
+```
+
+使用类方法作为伪构造方法也可以使你创建的类的使用者更容易操作。作为一个不太重要的例子，让我们看看类
+`Shape` 表示一个常规的多边形。`Shape`
+的实例可以通过所需的边数和和周长进行构造。
+
+```ruby
+class Shape
+  def initialize(numSides, perimeter)
+    # ...
+  end
+end
+```
+
+然而，一些年后，这些类有不同的应用，程序员需要通过名字创建图形，并且还有边长而不是周长。可以为
+`Shape` 添加一些类方法。
+
+```ruby
+class Shape
+  def Shape.triangle(sideLength)
+    Shape.new(3, sideLength*3)
+  end
+  def Shape.square(sideLength)
+    Shape.new(4, sideLength*4)
+  end
+end
+```
+
+这些都是许多类方法的应用，但只是探索类方法并不会让我们的点唱机尽快完成，所以让我们继续学习。
+
+## 访问控制
+
 ****
 
 > 本文翻译自《Programming Ruby》，主要目的是自己学习使用，文中翻译不到位之处烦请指正，如需转载请注明出处
