@@ -386,6 +386,197 @@ end
 
 ## 访问控制
 
+当进行一个类接口设计时，考虑你将会向外界暴露类中有多少内容可以被访问是很重要的。如果你允许在暴露过多的类被访问的内容，容易提高应用的耦合性。你类的使用者被引诱过度依赖类的实现细节，而不是逻辑接口。好消息是，在
+Ruby
+中只有一种方法可以改变类状态，就是通过调用它的一个方法。对方法的访问控制也就是你要控制被访问的对象。一个好的经验法则是不让一个对象暴露能够让无效状态脱离对象的方法。Ruby 给了我们三个级别的保护。
+
+  - **Public methods（公共方法）**
+    能够被任何对象调用，就如同没有访问控制。方法默认都是公共的，除了
+`initialize` 方法外，因为 `initialize` 方法是私有的。
+  - **Protected methods（受保护方法）**
+    只能被定义的类和其子类调用。访问被控制在家族内。
+  - **Private methods（私有方法）**
+    不能被其他接收器访问。因为使用这类方法时不能指定对象，私有方法只能在定义类时调用，以及在同一个对象中直接调用。
+
+`protected` 和 `private`
+之间的差异很小，并且这种差异不仅存在于 Ruby
+中，同时也存在于众多面向对象语言中。如果一个方法是受保护的，它可能被任何此类或者其子类的实例调用。如果一个方法是私有的，它只能在对象的上下文中被调用，直接访问其它对象的私有方法也不可能，即使是由同一个类创建的对象也不可能。
+
+Ruby
+在其他重要的地方和其他面向对象语言还有不同之处。当一个程序运转时，访问控制是可以动态决定的，而还是静态的。如果你访问一个受限的方法，你只是会得到一个访问方法的阻碍。
+
+### 指定访问控制
+
+你在一个类或模块的定义中为方法指定一个或多个访问级别时，可以使用
+`public`，`protected` 和
+`private`。每个函数都有两种不同的使用方式。
+
+如果是无传参的情况，可以直接在函数之后定义方法。如果你是一个 C++ 或者
+Java 程序员，你会觉得这个种使用方式很熟悉，就如同 `public`
+等关键字是一样的效果。
+
+```ruby
+class MyClass
+
+      def method1    # default is 'public'
+        #...
+      end
+
+  protected          # subsequent methods will be 'protected'
+
+      def method2    # will be 'protected'
+        #...
+      end
+
+  private            # subsequent methods will be 'private'
+
+      def method3    # will be 'private'
+        #...
+      end
+
+  public             # subsequent methods will be 'public'
+
+      def method4    # and this will be 'public'
+        #...
+      end
+end
+```
+
+还有另一种方式，你可以将需要设置访问控制的方法名如同传参一样，在访问控制函数后列举相应方法的名字。
+
+```ruby
+class MyClass
+
+  def method1
+  end
+
+  # ... and so on
+
+  public    :method1, :method4
+  protected :method2
+  private   :method3
+end
+```
+
+类的 `initialize` 方法自动被声明为私有的。
+
+是时候举一些例子了。或许我们需要为账户系统建模，这个系统需要每次借记都有相应的贷记。因为你需要确认没有人破坏这个规则，我们会把借记和贷记的方法声明为私有的，并且定义我们的外部接口用于完成流程。
+
+```ruby
+class Accounts
+
+  private
+
+    def debit(account, amount)
+      account.balance -= amount
+    end
+    def credit(account, amount)
+      account.balance += amount
+    end
+
+  public
+
+    #...
+    def transferToSavings(amount)
+      debit(@checking, amount)
+      credit(@savings, amount)
+    end
+    #...
+end
+```
+
+受保护访问是在当对象需要访问同一个类的其它对象内部状态时使用。例如，我们可能想要具体的
+`Account`
+对象能够原始地比较它们的平衡值，但对于外部世界又需要隐藏这些平衡值（可能因为我们需要用一个不同的方式表现他们）。
+
+```ruby
+ass Account
+  attr_reader :balance       # accessor method 'balance'
+
+  protected :balance         # and make it protected
+
+  def greaterBalanceThan(other)
+    return @balance > other.balance
+  end
+end
+```
+
+因为属性 `balance` 是受保护的，所以在 `Account`
+对象中是可用的。
+
+## 变量
+
+现在我们创建了很多对象，让我们来确认一下我们没有丢失掉它们。变量可以用来跟踪对象，每个变量都是与对象的关联。
+
+让我们确认一下代码。
+
+```ruby
+person = "Tim"
+person.object_id    »  537771100
+person.class        »  String
+person              »  "Tim"
+```
+
+第一行 Ruby 创建了一个新的 `String` 对象，并且值是 `Tim`。通过
+`person`
+局部变量关联对象。一个快速检验变量是否如上所说的办法就是确认它的字符串值，以及通过对象
+id，类型和值。
+
+所以变量是对象吗？
+
+在 Ruby
+中答案是「不是」。一个变量只是对象的一个引用。对象漂浮在一个巨大的水池中（大多数时候是在堆中），并且由变量指向它们。
+
+让我们做一个复杂一点的例子。
+
+```ruby
+person1 = "Tim"
+person2 = person1
+person1[0] = 'J'
+person1  »"Jim"
+person2  »"Jim"Tim
+```
+
+到底发生了什么？我们修改了 `person1` 的第一个字符，但是 `person1` 和
+`person2` 都从 「Tim」改变为了「Jim」。
+
+实际上，变量只是保留了对象的引用，并不是对象本身。将 `person1`
+赋值给
+`person2` 时并没有创建新对象，只是简单地将 `person1`
+的对象引用拷贝给了 `person2`，因此 `person1` 和 `person2`
+都指向了相同的对象。我们会 31 页展示相应的图示。
+
+分配对象别名，也就是可能将对象的引用分配赋值给多个变量。但这样不会导致代码出现问题吗？其实会出问题，但和你平时想象的并不一样（例如，在
+Java 中的对象以一样的方式运转）。实际上在 3.1
+例图的相应例子中，你可以通过 `String` 的 `dup`
+方法避免别名，会创建一个拥有相同值的 `String` 新对象。
+
+```ruby
+person1 = "Tim"
+person2 = person1.dup
+person1[0] = "J"
+person1  »"Jim"
+person2  »"Tim"person1
+```
+
+你也可以通过冻结对象的方式阻止其他人修改指定对象（我们会在 251
+页具体讨论冻结对象）。如果对已经冻结的对象进行修改，在 Ruby 中会被抛出
+`TypeError` 异常。
+
+```ruby
+person1 = "Tim"
+person2 = person1
+person1.freeze       # prevent modifications to the object
+person2[0] = "J"
+```
+
+结果是
+
+```ruby
+prog.rb:4:in `=': can't modify frozen string (TypeError)
+from prog.rb:47128750937760
+```
+
 ****
 
 > 本文翻译自《Programming Ruby》，主要目的是自己学习使用，文中翻译不到位之处烦请指正，如需转载请注明出处
