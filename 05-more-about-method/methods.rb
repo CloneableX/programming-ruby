@@ -42,3 +42,12 @@ end
 tc = TaxCalculator.new("Sales tax") {|amt| amt * 0.075}
 puts tc.getTax(100)
 puts tc.getTax(250)
+puts
+
+def five(a, b, c, d, e)
+  "I was passed #{a}, #{b}, #{c}, #{d}, #{e}"
+end
+
+puts five(1, 2, 3, 4, 5)
+puts five(1, 2, 3, *['a', 'b'])
+puts five(*(10..14).to_a)
