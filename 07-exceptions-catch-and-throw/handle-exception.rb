@@ -20,3 +20,14 @@ rescue SyntaxError, NameError => boom
 rescue StandardError => bang
   print "Error running script: " + bang
 end
+
+f = File.open("testfile")
+begin
+  # .. process
+rescue
+  # .. handle error
+else
+  puts "Congratulations-- no errors!"
+ensure
+  f.close unless f.nil?
+end
